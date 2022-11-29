@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -12,10 +12,11 @@ model sys_error {
   code       String    @db.VarChar(16)
   lang       String    @default("kr") @db.VarChar(8)
   status     Int
+  var        String?   @db.VarChar(32)
   text       String    @db.VarChar(64)
   remark     String    @db.VarChar(64)
-  created_at DateTime  @default(now()) @db.DateTime
-  updated_at DateTime? @updatedAt @db.DateTime
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @updatedAt @db.Timestamptz(6)
 
   @@id([code, lang])
 }
@@ -25,47 +26,90 @@ model sys_file {
   pre_fix      String   @db.VarChar(4)
   serial_no    Int
   serial_digit Int
-  created_at   DateTime @default(now()) @db.DateTime
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model news_category {
+  idx        Int      @id @default(autoincrement())
+  title      String   @db.VarChar(32)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  news       news[]
 }
 
 model news {
-  id      Int    @id @default(autoincrement()) @db.UnsignedInt
-  title   String
-  content String
+  idx          Int           @id @default(autoincrement())
+  category_idx Int
+  title        String        @db.VarChar(128)
+  content      String
+  views        Int           @default(0)
+  created_at   DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime?     @updatedAt @db.Timestamptz(6)
+  deleted_at   DateTime?     @db.Timestamptz(6)
+  category     news_category @relation(fields: [category_idx], references: [idx])
 }
 
 model project_types {
-  id         Int        @id @default(autoincrement()) @db.UnsignedInt
+  idx        Int        @id @default(autoincrement())
   name       String     @db.VarChar(64)
-  created_at DateTime   @default(now()) @db.DateTime
-  updated_at DateTime?  @updatedAt @db.DateTime
+  created_at DateTime   @default(now()) @db.Timestamptz(6)
+  deleted_at DateTime?  @db.Timestamptz(6)
   projects   projects[]
 }
 
 model projects {
-  id           Int       @id @default(autoincrement()) @db.UnsignedInt
-  type_id      Int
-  title        String    @db.VarChar(64)
-  start        DateTime? @db.DateTime
-  end          DateTime? @db.DateTime
-  location     String
-  organizer    String
-  subjectivity String
-  content      String
-
-  type   project_types    @relation(fields: [type_id], references: [id])
-  images project_images[]
+  idx        Int              @id @default(autoincrement())
+  type_idx   Int
+  title      String           @db.VarChar(64)
+  sub_title  String           @db.VarChar(64)
+  when       String           @db.VarChar(32)
+  location   String           @db.VarChar(32)
+  organizer  String           @db.VarChar(32)
+  operate    String?          @db.VarChar(32)
+  support    String?          @db.VarChar(32)
+  created_at DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at DateTime?        @updatedAt @db.Timestamptz(6)
+  type       project_types    @relation(fields: [type_idx], references: [idx])
+  images     project_images[]
 }
 
 model project_images {
-  id         Int       @id @default(autoincrement()) @db.UnsignedInt
-  project_id Int       @db.UnsignedInt
-  bucket     String
-  key        String
-  hash       String
-  list_order Int       @default(0)
-  created_at DateTime  @default(now()) @db.DateTime
-  updated_at DateTime? @updatedAt @db.DateTime
+  idx         Int       @id @default(autoincrement())
+  project_idx Int
+  bucket      String
+  key         String
+  hash        String
+  list_order  Int       @default(0)
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime? @updatedAt @db.Timestamptz(6)
+  project     projects  @relation(fields: [project_idx], references: [idx])
+}
 
-  project projects @relation(fields: [project_id], references: [id])
+model history_title {
+  idx        Int       @id @default(autoincrement())
+  title      String    @db.VarChar(32)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @updatedAt @db.Timestamptz(6)
+  list_order Int       @default(0)
+  histories  history[]
+}
+
+model history {
+  idx        Int           @id @default(autoincrement())
+  title_idx  Int
+  content    String
+  created_at DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at DateTime?     @updatedAt @db.Timestamptz(6)
+  list_order Int           @default(0)
+  title      history_title @relation(fields: [title_idx], references: [idx])
+}
+
+model contact {
+  idx        Int      @id @default(autoincrement())
+  organizer  String   @db.VarChar(64)
+  name       String   @db.VarChar(32)
+  tel        String   @db.VarChar(32)
+  email      String   @db.VarChar(62)
+  budget     String   @db.VarChar(62)
+  content    String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
 }

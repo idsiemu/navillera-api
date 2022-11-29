@@ -2,7 +2,7 @@ import 'module-alias/register';
 import * as dotenv from 'dotenv'
 import * as express from 'express'
 import { ApolloServer } from 'apollo-server-express'
-import {typeDefs, resolvers} from './schema'
+import { typeDefs, resolvers } from './schema'
 import { GraphQLUpload, graphqlUploadExpress } from 'graphql-upload';
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { createServer } from 'http';
@@ -36,7 +36,7 @@ const server = new ApolloServer({
 export const moment = momentTimezone;
 
 server.start().then(() => {
-    server.applyMiddleware({app, path: '/'})
+    server.applyMiddleware({ app, path: '/graphql' })
 });
 
 httpServer.listen(PORT, () =>
