@@ -13,7 +13,8 @@ const resolverMap = {
                 select: {
                     title: true,
                     created_at: true
-                }
+                },
+                take: 5
             })
             const histories = await prisma.history_title.findMany({
                 include: {
