@@ -122,6 +122,26 @@ const resolverMap = {
                     total_count: totalCount
                 }
             }
+        },
+        fetchNewsDetailInView: async (_, data) => {
+            const { idx } = data
+            const news = await prisma.news.findUnique({
+                where: {
+                    idx
+                },
+                select: {
+                    idx: true,
+                    category_idx: true,
+                    title: true,
+                    content: true,
+                    created_at: true
+                }
+            })
+            return {
+                status: 200,
+                data: news
+
+            }
         }
     },
     Mutation: {

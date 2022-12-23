@@ -8,6 +8,13 @@ export default gql`
         error: SystemError
     }
 
+    type NewsDeatilInViewResponse implements SystemResponse {
+        status: Int!
+        data: NewsData
+        token: String
+        error: SystemError
+    }
+
     type NewsModifyResponse implements SystemResponse {
         status: Int!
         data: NewsData
@@ -55,6 +62,7 @@ export default gql`
 
     type Query {
         fetchNewsDetail(idx: Int): NewsDeatilResponse
+        fetchNewsDetailInView(idx: Int!): NewsDeatilInViewResponse
         fetchNews(keyword: String, page: Int): NewsResponse
     }
 
