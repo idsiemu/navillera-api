@@ -134,7 +134,17 @@ const resolverMap = {
                     category_idx: true,
                     title: true,
                     content: true,
-                    created_at: true
+                    created_at: true,
+                    views: true
+                }
+            })
+
+            await prisma.news.update({
+                where: {
+                    idx
+                },
+                data: {
+                    views: news.views + 1
                 }
             })
             return {
