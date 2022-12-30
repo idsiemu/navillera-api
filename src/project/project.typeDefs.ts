@@ -8,11 +8,31 @@ export default gql`
         error: SystemError
     }
 
-    type PreSignedResponse implements SystemResponse {
+    type ProjectResponse implements SystemResponse {
         status: Int!
-        data: String
+        data: ProjectData
         token: String
         error: SystemError
+    }
+
+    type PreSignedResponse implements SystemResponse {
+        status: Int!
+        data: [PreSignedData]
+        token: String
+        error: SystemError
+    }
+
+    type ProjectImageResponse implements SystemResponse {
+        status: Int!
+        data: [ProjectImage]
+        token: String
+        error: SystemError
+    }
+
+    type PreSignedData {
+        url: String!
+        key: String!
+        list_order: Int!
     }
 
     type ProjectDetail {
@@ -48,6 +68,18 @@ export default gql`
         organizer: String!
         operate: String
         support: String
+        images: [PImageInput]
+    }
+
+    input PImageInput {
+        idx: Int
+        key: String!
+        list_order: Int!
+    }
+
+    input ExtInput {
+        ext: String!
+        list_order: Int!
     }
 
     type ProjectImage {
@@ -59,10 +91,11 @@ export default gql`
 
     type Query {
         fetchProjectDetail(idx: Int): ProjectDeatilResponse
+        preSignedQuery(exts: [ExtInput]): PreSignedResponse
     }
 
     type Mutation {
-        modifiyProject1(project: ProjectInput!): ProjectDeatilResponse
-        preSignedQuery(idx: Int!): PreSignedResponse
+        modifiyProject(project: ProjectInput!): ProjectResponse
+        projectImageUpload(project_idx: Int!, key: [String]!): ProjectImageResponse
     }
 `

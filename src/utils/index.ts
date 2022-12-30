@@ -1,15 +1,14 @@
 import prisma from '~/prisma';
 
-export const generateSerial = async(type: string, length: number) => {
-    const serialArray = []
+
+export const generateSerial = async(type: string, exts: Array<string>) => {
     const sysFile = await prisma.sys_file.findUnique({
         where : {
             file_type : type
         }
     })
-
-    for(let i = 1; i <= length ; i++){
-        const gNumber = sysFile.serial_no + i
+    const serialArray = exts.map((ext, index) => {
+        const gNumber = sysFile.serial_no + index + 1
         const gStr = gNumber.toString();
         const gDigit = gStr.length;
         let serialName = sysFile.pre_fix
@@ -22,16 +21,19 @@ export const generateSerial = async(type: string, length: number) => {
         }else{
             serialName += gNumber
         }
-        serialArray.push(serialName)
-    }
-
-    await prisma.sys_file.update({
-        where : {
-            file_type : type
-        },
-        data : {
-            serial_no : sysFile.serial_no + length
-        }
+        serialName += `.${ext}`
+        return serialName
     })
+    if(exts.length) {
+        await prisma.sys_file.update({
+            where : {
+                file_type : type
+            },
+            data : {
+                serial_no : sysFile.serial_no + exts.length
+            }
+        })
+    }
+    
     return serialArray
 }
