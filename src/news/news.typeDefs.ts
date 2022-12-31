@@ -68,5 +68,6 @@ export default gql`
 
     type Mutation {
         modifiyNews(idx: Int, category_idx: Int! title: String!, content: String!): NewsModifyResponse
+        deleteNews(idx: Int!): NewsModifyResponse
     }
 `

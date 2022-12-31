@@ -1,3 +1,4 @@
+import errorHandeler from '~/errorHandler';
 import prisma from '~/prisma';
 
 const resolverMap = {
@@ -157,7 +158,6 @@ const resolverMap = {
     Mutation: {
         modifiyNews: async (_, data) => {
             const { idx, category_idx, title, content } = data
-            console.log(data)
             if (idx < 0) {
                 try {
                     const result = await prisma.news.create({
@@ -217,6 +217,24 @@ const resolverMap = {
                 status: 500
             }
         },
+        deleteNews: async (_, data) => {
+            const { idx } = data
+            try{
+                await prisma.news.update({
+                    where: {
+                        idx
+                    },
+                    data: {
+                        deleted_at: new Date()
+                    }
+                })
+                return {
+                    status: 200
+                }
+            }catch(e) {
+                return errorHandeler('500-001')
+            }
+        }
     }
 }
 

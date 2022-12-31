@@ -8,6 +8,20 @@ export default gql`
         error: SystemError
     }
 
+    type ProjectsResponse implements SystemResponse {
+        status: Int!
+        data: Projects
+        token: String
+        error: SystemError
+    }
+
+    type AllProjectsResponse implements SystemResponse {
+        status: Int!
+        data: AllProjects
+        token: String
+        error: SystemError
+    }
+
     type ProjectResponse implements SystemResponse {
         status: Int!
         data: ProjectData
@@ -29,10 +43,20 @@ export default gql`
         error: SystemError
     }
 
+    type Projects {
+        list: [ProjectData]
+        total_count: Int
+    }
+
     type PreSignedData {
         url: String!
         key: String!
         list_order: Int!
+    }
+
+    type AllProjects {
+        types: [ProjectType]
+        projects: [ProjectData]
     }
 
     type ProjectDetail {
@@ -48,6 +72,7 @@ export default gql`
     type ProjectData {
         idx: Int!
         type_idx: Int!
+        type: ProjectType
         title: String!
         sub_title: String!
         when: String!
@@ -55,6 +80,7 @@ export default gql`
         organizer: String!
         operate: String
         support: String
+        created_at: DateTime
         images: [ProjectImage]
     }
 
@@ -90,12 +116,15 @@ export default gql`
     }
 
     type Query {
+        fetchAllProjects: AllProjectsResponse
         fetchProjectDetail(idx: Int): ProjectDeatilResponse
         preSignedQuery(exts: [ExtInput]): PreSignedResponse
+        fetchProjects(page: Int): ProjectsResponse
     }
 
     type Mutation {
         modifiyProject(project: ProjectInput!): ProjectResponse
         projectImageUpload(project_idx: Int!, key: [String]!): ProjectImageResponse
+        deleteProject(idx: Int!): ProjectResponse
     }
 `

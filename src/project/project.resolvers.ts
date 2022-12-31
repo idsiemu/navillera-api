@@ -1,3 +1,4 @@
+import errorHandeler from '~/errorHandler';
 import prisma from '~/prisma';
 import { generateSerial } from '~/utils';
 import { getPreSignedUrl, s3DeleteFiles } from '~/utils/aws';
@@ -5,13 +6,58 @@ import { getPreSignedUrl, s3DeleteFiles } from '~/utils/aws';
 
 const resolverMap = {
     Query: {
+        fetchAllProjects: async (_, data) => {
+            const types = await prisma.project_types.findMany()
+            try{
+                const projects = await prisma.projects.findMany({
+                    where: {
+                        deleted_at: null,
+                        AND: [
+                            {
+                                images: {
+                                    some: {
+                                        list_order: 0
+                                    }
+                                },
+                            },
+                            {
+                                images: {
+                                    some: {
+                                        list_order: 1
+                                    }
+                                }
+                            }
+                        ],
+                    },
+                    orderBy: {
+                        type_idx: "asc"
+                    },
+                    include: {
+                        images: true
+                    }
+                })
+                return {
+                    status: 200,
+                    data: {
+                        types,
+                        projects
+                    }
+                }
+            }catch(e) {
+                return {
+                    status: 500
+                }
+            }
+            
+        },
         fetchProjectDetail: async (_, data) => {
             const { idx } = data
             const types  = await prisma.project_types.findMany()
             if(idx) {
-                const project = await prisma.projects.findUnique({
+                const project = await prisma.projects.findFirst({
                     where: {
-                        idx
+                        idx,
+                        deleted_at: null
                     },
                     include: {
                         images: {
@@ -21,14 +67,18 @@ const resolverMap = {
                         }
                     }
                 })
-                
-                return {
-                    status: 200,
-                    data: {
-                        types,
-                        project
+
+                if(project) {
+                    return {
+                        status: 200,
+                        data: {
+                            types,
+                            project
+                        }
                     }
                 }
+                
+                return errorHandeler('500-004')
             }
             return {
                 status: 200,
@@ -52,6 +102,46 @@ const resolverMap = {
                         list_order: exts[index].list_order
                     }
                 })
+            }
+        },
+        fetchProjects: async (_, data) => {
+            const { page } = data
+            let totalCount = 0
+            if (!page) {
+                totalCount = await prisma.projects.count({
+                    where: {
+                        deleted_at: null
+                    }
+                })
+
+                totalCount = Math.ceil(totalCount / 10)
+            }
+
+            const list = await prisma.projects.findMany({
+                where: {
+                    deleted_at: null
+                },
+                take: 10,
+                skip: 10 * (page ? page : 0),
+                include: {
+                    type: {
+                        select: {
+                            idx: true,
+                            name: true
+                        }
+                    }
+                },
+                orderBy: {
+                    idx: 'desc'
+                }
+            })
+
+            return {
+                status: 200,
+                data: {
+                    list: list,
+                    total_count: totalCount
+                }
             }
         }
     },
@@ -110,6 +200,7 @@ const resolverMap = {
                     })
                 }
             })
+
             const trans = await prisma.$transaction([
                 ...wiilDeleteImages.map(will => {
                     return prisma.project_images.deleteMany({
@@ -119,7 +210,6 @@ const resolverMap = {
                     })
                 }),
                 ...images.filter(img => !img.idx).map(image => {
-                    console.log(image.list_order)
                     return prisma.project_images.create({
                         data: {
                             project_idx: idx,
@@ -171,6 +261,24 @@ const resolverMap = {
                 data: trans[0]
             }
         },
+        deleteProject: async (_, data) => {
+            const { idx } = data
+            try{
+                await prisma.projects.update({
+                    where: {
+                        idx
+                    },
+                    data: {
+                        deleted_at: new Date()
+                    }
+                })
+                return {
+                    status: 200
+                }
+            }catch(e) {
+                return errorHandeler('500-001')
+            }
+        }
     }
 }
 

@@ -46,6 +46,19 @@ model news {
   updated_at   DateTime?     @updatedAt @db.Timestamptz(6)
   deleted_at   DateTime?     @db.Timestamptz(6)
   category     news_category @relation(fields: [category_idx], references: [idx])
+  images       news_images[]
+}
+
+model news_images {
+  idx         Int       @id @default(autoincrement())
+  news_idx    Int
+  bucket      String
+  key         String
+  hash        String?
+  list_order  Int       @default(0)
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime? @updatedAt @db.Timestamptz(6)
+  news        news  @relation(fields: [news_idx], references: [idx])
 }
 
 model project_types {
@@ -61,13 +74,14 @@ model projects {
   type_idx   Int
   title      String           @db.VarChar(64)
   sub_title  String           @db.VarChar(64)
-  when       String           @db.VarChar(32)
-  location   String           @db.VarChar(32)
-  organizer  String           @db.VarChar(32)
-  operate    String?          @db.VarChar(32)
-  support    String?          @db.VarChar(32)
+  when       String           @db.VarChar(64)
+  location   String           @db.VarChar(64)
+  organizer  String           @db.VarChar(64)
+  operate    String?          @db.VarChar(64)
+  support    String?          @db.VarChar(128)
   created_at DateTime         @default(now()) @db.Timestamptz(6)
   updated_at DateTime?        @updatedAt @db.Timestamptz(6)
+  deleted_at DateTime?        @db.Timestamptz(6)
   type       project_types    @relation(fields: [type_idx], references: [idx])
   images     project_images[]
 }
