@@ -3,7 +3,6 @@
     "target": "es6",
     "module": "commonjs",
     "moduleResolution": "node",
-    "transpileOnly": true,
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
     "importHelpers": true,
