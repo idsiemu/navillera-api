@@ -88,13 +88,14 @@ const resolverMap = {
             }
         },
         preSignedQuery: async (_, data) => {
-            const { exts } = data
-            const fileIndexs = await generateSerial('project_image', exts.map(ext => ext.ext))
+            const { exts, type } = data
+            const typeOfImage = type ? type : 'project'
+            const fileIndexs = await generateSerial(`${typeOfImage}_image`, exts.map(ext => ext.ext))
 
             return {
                 status: 200,
                 data: fileIndexs.map((fileName, index) => {
-                    const key = `project/${fileName}`
+                    const key = `${typeOfImage}/${fileName}`
                     const url = getPreSignedUrl(key)
                     return {
                         url,
@@ -253,12 +254,11 @@ const resolverMap = {
                 }),
             ])
             
-            
             s3DeleteFiles(wiilDeleteImages)
 
             return {
                 status: 200,
-                data: trans[0]
+                data: trans[trans.length - 1]
             }
         },
         deleteProject: async (_, data) => {

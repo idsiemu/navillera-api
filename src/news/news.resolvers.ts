@@ -1,5 +1,6 @@
 import errorHandeler from '~/errorHandler';
 import prisma from '~/prisma';
+import { s3DeleteFiles } from '~/utils/aws';
 
 const resolverMap = {
     Query: {
@@ -18,12 +19,17 @@ const resolverMap = {
                             idx,
                             deleted_at: null
                         },
-                        select: {
-                            idx: true,
-                            category_idx: true,
-                            title: true,
-                            content: true,
-                            created_at: true
+                        include: {
+                            images: {
+                                orderBy: {
+                                    list_order: 'asc'
+                                },
+                                select: {
+                                    idx: true,
+                                    key: true,
+                                    list_order: true
+                                }
+                            }
                         }
                     })
                     if (news) {
@@ -130,13 +136,17 @@ const resolverMap = {
                 where: {
                     idx
                 },
-                select: {
-                    idx: true,
-                    category_idx: true,
-                    title: true,
-                    content: true,
-                    created_at: true,
-                    views: true
+                include: {
+                    images: {
+                        orderBy: {
+                            list_order: 'asc',
+                        },
+                        select: {
+                            idx: true,
+                            key: true,
+                            list_order: true
+                        }
+                    }
                 }
             })
 
@@ -157,21 +167,36 @@ const resolverMap = {
     },
     Mutation: {
         modifiyNews: async (_, data) => {
-            const { idx, category_idx, title, content } = data
-            if (idx < 0) {
+            const { news: { idx, category_idx, title, content, images}} = data
+            if (idx < 0 || !idx) {
                 try {
                     const result = await prisma.news.create({
                         data: {
                             category_idx,
                             title,
-                            content
+                            content,
+                            images: {
+                                createMany: {
+                                    data: images.map(img => {
+                                        return {
+                                            ...img,
+                                            bucket: process.env.AWS_S3_BUCKET,
+                                        }
+                                    })
+                                }
+                            }
                         },
-                        select: {
-                            idx: true,
-                            category_idx: true,
-                            title: true,
-                            content: true,
-                            created_at: true,
+                        include: {
+                            images: {
+                                orderBy: {
+                                    list_order: 'asc'
+                                },
+                                select: {
+                                    idx: true,
+                                    key: true,
+                                    list_order: true
+                                }
+                            }
                         }
                     })
                     return {
@@ -191,26 +216,82 @@ const resolverMap = {
                 }
             })
             if (news) {
-                const updated = await prisma.news.update({
+                const beforeImages = await prisma.news_images.findMany({
                     where: {
-                        idx
-                    },
-                    data: {
-                        category_idx,
-                        title,
-                        content
-                    },
-                    select: {
-                        idx: true,
-                        category_idx: true,
-                        title: true,
-                        content: true,
-                        created_at: true,
+                        news_idx: idx
                     }
                 })
+                const wiilDeleteImages = []
+                const willUpdateImages = []
+                beforeImages.forEach(be => {
+                    let exist = null
+                    images.some(img => {
+                        if(be.key === img.key) {
+                            exist = img
+                            return true
+                        }
+                        return false
+                    })
+                    if(exist) {
+                        willUpdateImages.push(exist)
+                    } else {
+                        wiilDeleteImages.push({
+                            Key: be.key
+                        })
+                    }
+                })
+
+                const trans = await prisma.$transaction([
+                    ...wiilDeleteImages.map(will => {
+                        return prisma.news_images.deleteMany({
+                            where: {
+                                key: will.Key
+                            }
+                        })
+                    }),
+                    ...images.filter(img => !img.idx).map(image => {
+                        return prisma.news_images.create({
+                            data: {
+                                news_idx: idx,
+                                bucket: process.env.AWS_S3_BUCKET,
+                                key: image.key,
+                                list_order: image.list_order
+                            }
+                        })
+                    }),
+                    ...willUpdateImages.map(img => {
+                        return prisma.news_images.update({
+                            where: {
+                                idx: img.idx
+                            },
+                            data: {
+                                list_order: img.list_order
+                            }
+                        })
+                    }),
+                    prisma.news.update({
+                        where: {
+                            idx
+                        },
+                        data: {
+                            category_idx,
+                            title,
+                            content
+                        },
+                        include: {
+                            images: {
+                                orderBy: {
+                                    list_order: 'asc'
+                                }
+                            }
+                        }
+                    }),
+                ])
+                
+                s3DeleteFiles(wiilDeleteImages)
                 return {
                     status: 200,
-                    data: updated
+                    data: trans[trans.length - 1]
                 }
             }
             return {

@@ -58,6 +58,27 @@ export default gql`
         title: String!
         content: String!
         created_at: DateTime!
+        images: [NewsImage]
+    }
+
+    type NewsImage {
+        idx: Int
+        key: String!
+        list_order: Int!
+    }
+
+    input NewsInput {
+        idx: Int
+        category_idx: Int!
+        title: String!
+        content: String!
+        images: [NewsImageInput]
+    }
+
+    input NewsImageInput {
+        idx: Int
+        key: String!
+        list_order: Int!
     }
 
     type Query {
@@ -67,7 +88,7 @@ export default gql`
     }
 
     type Mutation {
-        modifiyNews(idx: Int, category_idx: Int! title: String!, content: String!): NewsModifyResponse
+        modifiyNews(news: NewsInput!): NewsModifyResponse
         deleteNews(idx: Int!): NewsModifyResponse
     }
 `

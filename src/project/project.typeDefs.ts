@@ -118,7 +118,7 @@ export default gql`
     type Query {
         fetchAllProjects: AllProjectsResponse
         fetchProjectDetail(idx: Int): ProjectDeatilResponse
-        preSignedQuery(exts: [ExtInput]): PreSignedResponse
+        preSignedQuery(exts: [ExtInput], type: String): PreSignedResponse
         fetchProjects(page: Int): ProjectsResponse
     }
 
